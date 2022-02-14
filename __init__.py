@@ -17,11 +17,13 @@
 # ##### END GPL LICENSE BLOCK #####
 
 
+from tokenize import String
 import bpy
 import time
 from bpy.utils import register_class, unregister_class
 from bpy.types import Operator, Panel, PropertyGroup
-from bpy.props import IntProperty
+from bpy.props import IntProperty, StringProperty
+
 
 bl_info = {
     "name": "Blend File Analyzer",
@@ -35,16 +37,34 @@ bl_info = {
     "category": "Scene"}
 
 
-class BFA_OT_BlendAnalyzer(Operator):
-    
+objList = []
+
+class BFA_OT_BlendAnalyzer(Operator):    
     bl_idname = 'scene.blend_analyzer'
     bl_label = 'Analyze Blend File'
     bl_description = 'Analyze Blend File'
     
-    
-    def execute(self, context):        
-        config = bpy.context.scene.CONFIG_BlendAnalyzer
-        #self.create_connections(config)            
+    button_input: StringProperty()
+    def get_mesh_size(self):
+        objects = bpy.data.objects
+        objList.clear()
+        for ob in objects:
+            if ob.type == 'MESH':
+                objList.append([len(ob.data.vertices), ob.name])
+
+        objList.sort(key = lambda i: i[0], reverse = False)    
+        for i in objList:
+            print(i[0], i[1])
+
+
+    def execute(self, context):  
+        if self.button_input:
+            objname = self.button_input
+            bpy.ops.object.select_all(action='DESELECT')
+            bpy.data.objects[objname].select_set(True)
+            context.view_layer.objects.active = bpy.data.objects[objname]
+        else:        
+            self.get_mesh_size()            
         return {'FINISHED'}
 
 
@@ -91,14 +111,13 @@ class BFA_PT_UI(Panel):
         col.operator('scene.blend_analyzer', text='Analyze Blend File')
         
         col = box.column(align=True)
-        i=0
-        while i < 10:
+        
+        for i in objList:            
             row = col.row(align=True) 
-            row.operator('scene.blend_analyzer', text='', icon = 'RESTRICT_SELECT_OFF')
-            row.prop(props, 'chart', text='test', slider=True)
-            i+=1
-
-
+            row.operator('scene.blend_analyzer', text='', icon = 'RESTRICT_SELECT_OFF').button_input=str(i[1])
+            row.prop(props, 'chart', text=str(i[1]), slider=True)
+            row.label(text=str(i[0]))
+            
 
 
 classes = (
