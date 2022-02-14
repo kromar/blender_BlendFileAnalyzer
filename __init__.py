@@ -24,18 +24,18 @@ from bpy.types import Operator, Panel, PropertyGroup
 from bpy.props import IntProperty
 
 bl_info = {
-    "name": "Blend Analyzer",
+    "name": "Blend File Analyzer",
     "description": "",
     "author": "Daniel Grauer",
     "version": (1, 0, 0),
     "blender": (3, 0, 0),
     "location": "Properties space > Scene > Blend Analyzer",
-    "wiki_url": "",
-    "tracker_url": "",
-    "category": "Mesh"}
+    "wiki_url": "https://github.com/kromar/blender_BlendFileAnalyzer",
+    "tracker_url": "https://github.com/kromar/blender_BlendFileAnalyzer/issues",
+    "category": "Scene"}
 
 
-class MW_OT_BlendAnalyzer(Operator):
+class BFA_OT_BlendAnalyzer(Operator):
     
     bl_idname = 'scene.blend_analyzer'
     bl_label = 'Analyze Blend File'
@@ -55,7 +55,7 @@ def profiler(start_time=0, string=None):
     return start_time  
 
 
-class MW_PG_Props(PropertyGroup):    
+class BFA_PG_Props(PropertyGroup):    
     bl_idname = __package__
 
     chart: IntProperty(
@@ -69,7 +69,7 @@ class MW_PG_Props(PropertyGroup):
     )
         
 
-class MW_PT_UI(Panel):
+class BFA_PT_UI(Panel):
     """Panel for the magic weights, located in Properties > Mesh."""
 
     bl_label = 'Blend File Analyzer'
@@ -102,15 +102,15 @@ class MW_PT_UI(Panel):
 
 
 classes = (
-    MW_PT_UI,
-    MW_PG_Props,
-    MW_OT_BlendAnalyzer,
+    BFA_PT_UI,
+    BFA_PG_Props,
+    BFA_OT_BlendAnalyzer,
     )
 
 
 def register() -> None:
     [register_class(c) for c in classes]
-    bpy.types.Scene.CONFIG_BlendAnalyzer = bpy.props.PointerProperty(type=MW_PG_Props)
+    bpy.types.Scene.CONFIG_BlendAnalyzer = bpy.props.PointerProperty(type=BFA_PG_Props)
 
 
 def unregister() -> None:
