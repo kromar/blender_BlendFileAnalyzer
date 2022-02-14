@@ -45,26 +45,34 @@ class BFA_OT_BlendAnalyzer(Operator):
     bl_description = 'Analyze Blend File'
     
     button_input: StringProperty()
+            
     def get_mesh_size(self):
         objects = bpy.data.objects
         objList.clear()
         for ob in objects:
-            if ob.type == 'MESH':
-                objList.append([len(ob.data.vertices), ob.name])
-
-        objList.sort(key = lambda i: i[0], reverse = False)    
-        for i in objList:
-            print(i[0], i[1])
+            if  ob.type == 'MESH':
+                depsgraph = bpy.context.evaluated_depsgraph_get() 
+                object_eval = ob.evaluated_get(depsgraph)
+                object_eval.data.calc_loop_triangles()
+                numTris =len(object_eval.data.loop_triangles)                   
+                objList.append([ob.name, numTris]) 
+                    
+        objList.sort(key = lambda i: i[1], reverse = True)    
+        """ for i in objList:
+            print(i[0], i[1]) """
 
 
     def execute(self, context):  
-        if self.button_input:
+        if self.button_input=='ANALYZE':
+            self.get_mesh_size() 
+        else:      
             objname = self.button_input
-            bpy.ops.object.select_all(action='DESELECT')
-            bpy.data.objects[objname].select_set(True)
-            context.view_layer.objects.active = bpy.data.objects[objname]
-        else:        
-            self.get_mesh_size()            
+            try:
+                bpy.ops.object.select_all(action='DESELECT')
+                bpy.data.objects[objname].select_set(True)
+                context.view_layer.objects.active = bpy.data.objects[objname]
+            except:
+                pass
         return {'FINISHED'}
 
 
@@ -108,15 +116,16 @@ class BFA_PT_UI(Panel):
 
         row = box.row(align=True)
         col = box.column(align=True)
-        col.operator('scene.blend_analyzer', text='Analyze Blend File')
+        col.operator('scene.blend_analyzer', text='Analyze Blend File').button_input = 'ANALYZE'
         
         col = box.column(align=True)
         
         for i in objList:            
-            row = col.row(align=True) 
-            row.operator('scene.blend_analyzer', text='', icon = 'RESTRICT_SELECT_OFF').button_input=str(i[1])
-            row.prop(props, 'chart', text=str(i[1]), slider=True)
+            row = col.row(align=False) 
+            row.operator('scene.blend_analyzer', text='', icon = 'RESTRICT_SELECT_OFF').button_input=str(i[0])
             row.label(text=str(i[0]))
+            #row.prop(props, 'chart', text=str(i[0]), slider=True)
+            row.label(text=str(i[1]))
             
 
 
