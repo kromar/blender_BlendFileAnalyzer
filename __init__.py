@@ -21,8 +21,8 @@ from tokenize import String
 import bpy
 import time
 from bpy.utils import register_class, unregister_class
-from bpy.types import Operator, Panel, PropertyGroup
-from bpy.props import IntProperty, StringProperty
+from bpy.types import Operator, Panel, PropertyGroup, UIList
+from bpy.props import IntProperty, StringProperty, BoolProperty, CollectionProperty
 
 
 bl_info = {
@@ -37,7 +37,43 @@ bl_info = {
     "category": "Scene"}
 
 
-objList = []
+#bfa_list = []
+
+
+class BFA_List(PropertyGroup): 
+    """Group of properties representing an button in the list."""
+    button_name: StringProperty(
+        name="", 
+        description="button_name", 
+        default="Name") 
+
+    button_operator: StringProperty(
+        name="", 
+        description="button_operator", 
+        default="screen.userpref_show") 
+
+    button_icon: StringProperty(
+        name="", 
+        description="buton_icon", 
+        default="FUND")  
+
+    show_button_name: BoolProperty(
+        name="",
+        description="Show Button Name",
+        default=False) 
+        
+
+class BFA_UL_List(UIList): 
+    """Custom Buttons List."""    
+    def draw_item(self, context, layout, data, item, icon, active_data, active_propname, index): 
+        
+        layout.operator('scene.blend_analyzer', text='', icon = 'RESTRICT_SELECT_OFF') #.button_input=str(i[0])
+        layout.label(text="test")
+        layout.label(text=str(len("test count")))
+        layout.label(text=str(i[0]))
+        #row.prop(props, 'chart', text=str(i[0]), slider=True)
+        layout.label(text=str(i[1]))
+
 
 class BFA_OT_BlendAnalyzer(Operator):    
     bl_idname = 'scene.blend_analyzer'
@@ -46,25 +82,27 @@ class BFA_OT_BlendAnalyzer(Operator):
     
     button_input: StringProperty()
             
-    def get_mesh_size(self):
+    def get_mesh_size(self, context):        
+        scene = context.scene
         objects = bpy.data.objects
-        objList.clear()
+        scene.bfa_list.clear()
         for ob in objects:
             if  ob.type == 'MESH':
                 depsgraph = bpy.context.evaluated_depsgraph_get() 
                 object_eval = ob.evaluated_get(depsgraph)
                 object_eval.data.calc_loop_triangles()
-                numTris =len(object_eval.data.loop_triangles)                   
-                objList.append([ob.name, numTris]) 
+                numTris = len(object_eval.data.loop_triangles) 
+                scene.bfa_list.add()                  
+                #scene.bfa_list.append([ob.name, numTris]) 
                     
-        objList.sort(key = lambda i: i[1], reverse = True)    
-        """ for i in objList:
+        #scene.bfa_list.sort(key = lambda i: i[1], reverse = True)    
+        """ for i in bfa_list:
             print(i[0], i[1]) """
 
 
     def execute(self, context):  
         if self.button_input=='ANALYZE':
-            self.get_mesh_size() 
+            self.get_mesh_size(context) 
         else:      
             objname = self.button_input
             try:
@@ -108,6 +146,7 @@ class BFA_PT_UI(Panel):
     def draw(self, context):
         props = bpy.context.scene.CONFIG_BlendAnalyzer
 
+        scene = context.scene 
         layout = self.layout        
         layout.use_property_split = False
 
@@ -117,15 +156,27 @@ class BFA_PT_UI(Panel):
         row = box.row(align=True)
         col = box.column(align=True)
         col.operator('scene.blend_analyzer', text='Analyze Blend File').button_input = 'ANALYZE'
-        
+
         col = box.column(align=True)
         
-        for i in objList:            
+        col.template_list("BFA_UL_List", 
+                            "Blend File Analisys", 
+                            scene, 
+                            "bfa_list", 
+                            scene, 
+                            "bfa_list_index",                            
+                            type='DEFAULT',
+                            columns=1,
+                            rows = 1,
+                        ) 
+        
+        
+        """ for i in scene.bfa_list:            
             row = col.row(align=False) 
             row.operator('scene.blend_analyzer', text='', icon = 'RESTRICT_SELECT_OFF').button_input=str(i[0])
             row.label(text=str(i[0]))
             #row.prop(props, 'chart', text=str(i[0]), slider=True)
-            row.label(text=str(i[1]))
+            row.label(text=str(i[1])) """
             
 
 
@@ -133,15 +184,23 @@ classes = (
     BFA_PT_UI,
     BFA_PG_Props,
     BFA_OT_BlendAnalyzer,
+    BFA_List,
+    BFA_UL_List,
     )
 
 
 def register() -> None:
     [register_class(c) for c in classes]
     bpy.types.Scene.CONFIG_BlendAnalyzer = bpy.props.PointerProperty(type=BFA_PG_Props)
+    
+    bpy.types.Scene.bfa_list = CollectionProperty(type = BFA_List) 
+    bpy.types.Scene.bfa_list_index = IntProperty(default = 0) 
 
 
 def unregister() -> None:
+    del bpy.types.Scene.bfa_list 
+    del bpy.types.Scene.bfa_list_index 
+
     [unregister_class(c) for c in classes]
     del bpy.types.Scene.CONFIG_BlendAnalyzer
 
