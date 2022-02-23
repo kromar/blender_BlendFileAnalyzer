@@ -41,27 +41,61 @@ class BFA_PG_ListItems(PropertyGroup):
     """Group of properties representing an button in the list."""
     
     name: bpy.props.StringProperty(
-        name="Test Property", 
-        default="Unknown")
+        name="name", 
+        default="Untitled")
 
     vertices: bpy.props.IntProperty(
-        name="Test Property", 
+        name="vertices", 
         default=0)
 
     vertices_modified: bpy.props.IntProperty(
-        name="Test Property", 
+        name="vertices_modified", 
         default=0)
 
-        
 
 class BFA_UL_List(UIList): 
-    """Custom Buttons List."""    
+    """Blend File analyzer List."""   
+    # Order by props
+    order_by_verts: BoolProperty(default=False)
+     
     def draw_item(self, context, layout, data, item, icon, active_data, active_propname, index):         
         layout.operator('scene.blend_analyzer', text='', icon = 'RESTRICT_SELECT_OFF').button_input=item.name
         layout.label(text=item.name)
         layout.label(text=str(item.vertices))
         layout.label(text=str(item.vertices_modified))
         #row.prop(props, 'chart', text=str(i[0]), slider=True)
+    
+
+    def draw_filter(self, context, layout):
+        """UI code for the filtering/sorting/search area."""
+
+        layout.separator()
+        col = layout.column(align=True)
+
+        row = col.row(align=True)
+        #row.prop(self, 'filter_by_random_prop', text='', icon='VIEWZOOM')
+        #row.prop(self, 'invert_filter_by_random', text='', icon='ARROW_LEFTRIGHT')
+        
+        row.prop(self, 'order_by_verts', text='', icon='SORTSIZE')
+
+    
+    def filter_items(self, context, data, propname):
+        """Filter and order items in the list."""
+
+        # We initialize filtered and ordered as empty lists. Notice that 
+        # if all sorting and filtering is disabled, we will return
+        # these empty. 
+
+        filtered = []
+        ordered = []
+        items = getattr(data, propname)
+        
+        # Order by the length of vertices
+        if self.order_by_verts:
+            sort_items = bpy.types.UI_UL_list.sort_items_helper
+            ordered = sort_items(items, lambda i: len(i.name), True)
+            
+        return filtered, ordered    
 
 
 class BFA_OT_BlendAnalyzer(Operator):    
@@ -128,12 +162,10 @@ class BFA_PT_UI(Panel):
         row.operator('scene.blend_analyzer', text='Objects', icon = 'OUTLINER_OB_MESH',depress=False, emboss=True).button_input='SORT_OBJ'   
         row.operator('scene.blend_analyzer', text='Vertices', text_ctxt='Sort by Vertex count before modifiers', icon = 'GROUP_VERTEX').button_input='SORT_VERTS'  
         row.operator('scene.blend_analyzer', text='After Modifiers', text_ctxt='Sort by Vertex count after modifiers', icon = 'MODIFIER').button_input='SORT_MODS' 
+        
         col.template_list("BFA_UL_List", "Blend File Analisys", 
                             scene, "bfa_list_item", 
-                            scene, "bfa_list_index",                            
-                            type='DEFAULT',
-                            columns=1, rows = 1,
-                        )                    
+                            scene, "bfa_list_index")                    
 
 
 classes = (
