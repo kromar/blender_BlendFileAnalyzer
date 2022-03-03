@@ -29,7 +29,7 @@ bl_info = {
     "name": "Blend File Analyzer",
     "description": "",
     "author": "Daniel Grauer",
-    "version": (1, 0, 0),
+    "version": (1, 1, 0),
     "blender": (3, 0, 0),
     "location": "Properties space > Scene > Blend Analyzer",
     "wiki_url": "https://github.com/kromar/blender_BlendFileAnalyzer",
@@ -105,9 +105,14 @@ class BFA_OT_BlendAnalyzer(Operator):
     
     button_input: StringProperty()
             
-    def get_mesh_size(self, context):        
+    def get_mesh_size(self, context):      
         scene = context.scene
-        objects = bpy.data.objects
+        
+        if self.button_input == 'ANALYZE_SCENE':
+            objects = bpy.data.objects
+        elif self.button_input == 'ANALYZE_SELECTED':
+            objects = bpy.context.selected_objects
+
         scene.bfa_list_item.clear()
         for ob in objects:
             if  ob.type == 'MESH':
@@ -123,10 +128,11 @@ class BFA_OT_BlendAnalyzer(Operator):
 
 
     def execute(self, context):  
-        if self.button_input=='ANALYZE':
+        if self.button_input in {'ANALYZE_SCENE', 'ANALYZE_SELECTED'}:
             self.get_mesh_size(context) 
         else:      
             objname = self.button_input
+            print("Select mesh: ", objname)
             try:
                 bpy.ops.object.select_all(action='DESELECT')
                 bpy.data.objects[objname].select_set(True)
@@ -155,7 +161,8 @@ class BFA_PT_UI(Panel):
         layout = self.layout  
         row = layout.row()        
         row.scale_y = 1.5
-        row.operator('scene.blend_analyzer', text='Analyze Content').button_input = 'ANALYZE'
+        row.operator('scene.blend_analyzer', text='Analyze Scene').button_input = 'ANALYZE_SCENE'
+        row.operator('scene.blend_analyzer', text='Analyze Selected').button_input = 'ANALYZE_SELECTED'
         
         col = layout.column(align=True)  
         row = col.row(align=False)  
