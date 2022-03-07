@@ -89,11 +89,15 @@ class BFA_UL_List(UIList):
         filtered = []
         ordered = []
         items = getattr(data, propname)
-        
+
+        # Items have to be organized in a list of tuples,
+        # original indexes and items.
+        to_sort = [(i, item) for i, item in enumerate(items)]
+
         # Order by the length of vertices
         if self.order_by_verts:
             sort_items = bpy.types.UI_UL_list.sort_items_helper
-            ordered = sort_items(items, lambda i: len(i.name), True)
+            ordered = sort_items(to_sort, lambda o: o[1].vertices, True)
             
         return filtered, ordered    
 
