@@ -163,17 +163,16 @@ class BFA_PT_UI(Panel):
     def draw(self, context):
         scene = context.scene 
         layout = self.layout  
-        row = layout.row()        
-        row.scale_y = 1.5
-        row.operator('scene.blend_analyzer', text='Analyze Scene').button_input = 'ANALYZE_SCENE'
-        row.operator('scene.blend_analyzer', text='Analyze Selected').button_input = 'ANALYZE_SELECTED'
+        row = layout.row()
+        row.operator('scene.blend_analyzer', text='Analyze Scene', icon = 'FILE_REFRESH').button_input = 'ANALYZE_SCENE'
+        row.operator('scene.blend_analyzer', text='Analyze Selected', icon = 'FILE_REFRESH').button_input = 'ANALYZE_SELECTED'
         
         col = layout.column(align=True)  
-        row = col.row(align=False)  
+        """ row = col.row(align=False)  
         row.operator('scene.blend_analyzer', text='Objects', icon = 'OUTLINER_OB_MESH',depress=False, emboss=True).button_input='SORT_OBJ'   
         row.operator('scene.blend_analyzer', text='Vertices', text_ctxt='Sort by Vertex count before modifiers', icon = 'GROUP_VERTEX').button_input='SORT_VERTS'  
         row.operator('scene.blend_analyzer', text='After Modifiers', text_ctxt='Sort by Vertex count after modifiers', icon = 'MODIFIER').button_input='SORT_MODS' 
-        
+         """
         col.template_list("BFA_UL_List", "Blend File Analisys", 
                             scene, "bfa_list_item", 
                             scene, "bfa_list_index")                    
