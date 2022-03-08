@@ -22,14 +22,14 @@ import bpy
 import time
 from bpy.utils import register_class, unregister_class
 from bpy.types import Operator, Panel, PropertyGroup, UIList
-from bpy.props import IntProperty, StringProperty, BoolProperty, CollectionProperty
+from bpy.props import IntProperty, StringProperty, BoolProperty, CollectionProperty, EnumProperty
 
 
 bl_info = {
     "name": "Blend File Analyzer",
     "description": "",
     "author": "Daniel Grauer",
-    "version": (1, 1, 0),
+    "version": (1, 1, 1),
     "blender": (3, 0, 0),
     "location": "Properties space > Scene > Blend Analyzer",
     "wiki_url": "https://github.com/kromar/blender_BlendFileAnalyzer",
@@ -40,7 +40,7 @@ bl_info = {
 class BFA_PG_ListItems(PropertyGroup): 
     """Group of properties representing an button in the list."""
     
-    name: bpy.props.StringProperty(
+    object_name: bpy.props.StringProperty(
         name="name", 
         default="Untitled")
 
@@ -56,11 +56,13 @@ class BFA_PG_ListItems(PropertyGroup):
 class BFA_UL_List(UIList): 
     """Blend File analyzer List."""   
     # Order by props
+    order_by_name: BoolProperty(default=False)
     order_by_verts: BoolProperty(default=False)
+    order_by_modified: BoolProperty(default=False)
      
     def draw_item(self, context, layout, data, item, icon, active_data, active_propname, index):         
-        layout.operator('scene.blend_analyzer', text='', icon = 'RESTRICT_SELECT_OFF').button_input=item.name
-        layout.label(text=item.name)
+        layout.operator('scene.blend_analyzer', text='', icon = 'RESTRICT_SELECT_OFF').button_input=item.object_name
+        layout.label(text=item.object_name)
         layout.label(text=str(item.vertices))
         layout.label(text=str(item.vertices_modified))
         #row.prop(props, 'chart', text=str(i[0]), slider=True)
@@ -68,20 +70,14 @@ class BFA_UL_List(UIList):
 
     def draw_filter(self, context, layout):
         """UI code for the filtering/sorting/search area."""
-
         layout.separator()
-        col = layout.column(align=True)
-
-        row = col.row(align=True)
-        #row.prop(self, 'filter_by_random_prop', text='', icon='VIEWZOOM')
-        #row.prop(self, 'invert_filter_by_random', text='', icon='ARROW_LEFTRIGHT')
+        row = layout.row(align=False)
+        row.prop(self, 'order_by_verts', text='Vertices', icon='GROUP_VERTEX')
+        row.prop(self, 'order_by_modified', text='After Modifiers', icon='MODIFIER')
         
-        row.prop(self, 'order_by_verts', text='', icon='SORTSIZE')
-
     
     def filter_items(self, context, data, propname):
         """Filter and order items in the list."""
-
         # We initialize filtered and ordered as empty lists. Notice that 
         # if all sorting and filtering is disabled, we will return
         # these empty. 
@@ -94,10 +90,14 @@ class BFA_UL_List(UIList):
         # original indexes and items.
         to_sort = [(i, item) for i, item in enumerate(items)]
 
-        # Order by the length of vertices
+        # Order by the length of vertices            
         if self.order_by_verts:
             sort_items = bpy.types.UI_UL_list.sort_items_helper
             ordered = sort_items(to_sort, lambda o: o[1].vertices, True)
+            
+        elif self.order_by_modified:
+            sort_items = bpy.types.UI_UL_list.sort_items_helper
+            ordered = sort_items(to_sort, lambda o: o[1].vertices_modified, True)
             
         return filtered, ordered    
 
@@ -126,7 +126,7 @@ class BFA_OT_BlendAnalyzer(Operator):
                 numTris = len(object_eval.data.loop_triangles) 
                                                 
                 new_item = scene.bfa_list_item.add()  
-                new_item.name = ob.name
+                new_item.object_name = ob.name
                 new_item.vertices = len(ob.data.vertices)
                 new_item.vertices_modified = numTris                    
 
@@ -168,11 +168,12 @@ class BFA_PT_UI(Panel):
         row.operator('scene.blend_analyzer', text='Analyze Selected', icon = 'FILE_REFRESH').button_input = 'ANALYZE_SELECTED'
         
         col = layout.column(align=True)  
-        """ row = col.row(align=False)  
-        row.operator('scene.blend_analyzer', text='Objects', icon = 'OUTLINER_OB_MESH',depress=False, emboss=True).button_input='SORT_OBJ'   
-        row.operator('scene.blend_analyzer', text='Vertices', text_ctxt='Sort by Vertex count before modifiers', icon = 'GROUP_VERTEX').button_input='SORT_VERTS'  
-        row.operator('scene.blend_analyzer', text='After Modifiers', text_ctxt='Sort by Vertex count after modifiers', icon = 'MODIFIER').button_input='SORT_MODS' 
-         """
+        row = col.row(align=False)  
+        
+        row.label(text='Objects')
+        row.label(text='Vertices')
+        row.label(text='After Modifiers')
+
         col.template_list("BFA_UL_List", "Blend File Analisys", 
                             scene, "bfa_list_item", 
                             scene, "bfa_list_index")                    
